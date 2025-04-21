@@ -27,6 +27,18 @@ st.set_page_config(page_title="VibePick", layout="centered")
 st.title("🎉 VibePick")
 st.caption("Decide together. Pick your vibe.")
 
+# 🔥 TEST BUTTON to validate Firebase write
+if st.button("🔥 Test Firebase Write"):
+    test_data = {
+        "name": "Alison",
+        "email": "test@example.com",
+        "city": "Tampa",
+        "preferences": ["🎬 Movie Night", "🍝 Dinner"],
+        "veto": "None"
+    }
+    save_user_to_session("debug-test", test_data)
+    st.success("✅ Test user written to Firebase (session: debug-test)")
+
 # Session setup
 st.subheader("🔐 Group Session")
 use_existing = st.radio("Are you starting or joining a session?", ["Start new", "Join existing"])
