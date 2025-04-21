@@ -32,8 +32,12 @@ def save_trip_to_session(session_id, trip_data):
 
 # Retrieve all users in a session
 def get_session_users(session_id):
-    ref = db.reference(f"sessions/{session_id}/users")
-    return ref.get() or {}
+    try:
+        ref = db.reference(f"sessions/{session_id}/users")
+        return ref.get() or {}
+    except Exception as e:
+        print("Firebase read error:", e)
+        return {}
 
 # Retrieve trip data
 def get_trip_data(session_id):
