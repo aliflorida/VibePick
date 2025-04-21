@@ -5,8 +5,7 @@ import json
 
 def init_firebase():
     if not firebase_admin._apps:
-        cred_dict = st.secrets["FIREBASE_CREDENTIALS"]
-        cred = credentials.Certificate(json.loads(json.dumps(cred_dict)))
+        cred = credentials.Certificate(dict(st.secrets["FIREBASE_CREDENTIALS"]))
         firebase_admin.initialize_app(cred, {
             "databaseURL": st.secrets["FIREBASE_DB_URL"]
         })
