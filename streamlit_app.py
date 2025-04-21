@@ -39,19 +39,34 @@ else:
 
 # Step 2: Group Vibe
 st.header("Step 2: Group Vibe")
+
+meal_vibes = [
+    "🍳 Breakfast",
+    "🥪 Lunch",
+    "🍝 Dinner",
+    "🥂 Brunch",
+    "🍕 Late-Night Eats",
+    "🍰 Dessert Outing",
+    "🍻 Drinks / Happy Hour"
+]
+
+activity_vibes = [
+    "🎲 Board Games",
+    "🎬 Movie Night",
+    "🌳 Nature Walks",
+    "🏖️ Beach Day",
+    "🎭 Cultural Events",
+    "🧠 Trivia Games",
+    "🧩 Virtual Game Night",
+    "🚴 Adventure Sports",
+    "🍽️ Foodie Adventures"
+]
+
+all_vibes = meal_vibes + activity_vibes
+
 selected_preferences = st.multiselect(
     "What kind of vibe is your group going for?",
-    sorted([
-        "Adventure Sports",
-        "Beach Day",
-        "Board Games",
-        "Cultural Events",
-        "Foodie Adventures",
-        "Movie Night",
-        "Nature Walks",
-        "Trivia Games",
-        "Virtual Game Night"
-    ])
+    options=all_vibes
 )
 veto = st.selectbox("Anything you'd veto?", ["None"] + selected_preferences)
 
@@ -66,7 +81,7 @@ if st.button("Regenerate Suggestions"):
     The group is in the mood for: {vibe_context}.
     Veto: {veto if veto != "None" else "None"}.
     Suggest a few creative group activities or destinations that match the mood.
-    Keep the tone casual and group-friendly.
+    Include food-related ideas if relevant. Keep the tone casual and group-friendly.
     """
 
     response = client.chat.completions.create(
@@ -80,7 +95,8 @@ if st.button("Regenerate Suggestions"):
     # Optional Real-time suggestions
     st.subheader("🔎 Explore Local Options")
     if plan_type in ["In-person", "Hybrid"]:
-        results = search_foursquare_places(selected_preferences[0] if selected_preferences else "food", user_city, FOURSQUARE_API_KEY)
+        query = selected_preferences[0].split(" ", 1)[-1] if selected_preferences else "food"
+        results = search_foursquare_places(query, user_city, FOURSQUARE_API_KEY)
         for place in results:
             st.markdown(f"**{place['name']}**")
             st.caption(f"{place['address']} • {place['category']}")
