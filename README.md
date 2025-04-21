@@ -1,19 +1,19 @@
-# 🎈 Blank app template
+# VibePick 🎉
+**Decide together. Pick your vibe.**
 
-A simple Streamlit app template for you to modify!
+VibePick is an AI-powered group decision-making app that helps friends, families, and teams decide what to eat, do, or plan — in person or remotely.
 
-[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://blank-app-template.streamlit.app/)
+## Features
+- AI-powered suggestions using OpenAI
+- Real-time local and virtual activity searches
+- Group trip planning with flight estimate search
+- Emails results to the group
+- Designed for easy, shared decision-making
 
-### How to run it on your own machine
-
-1. Install the requirements
-
-   ```
-   $ pip install -r requirements.txt
-   ```
-
-2. Run the app
-
-   ```
-   $ streamlit run streamlit_app.py
-   ```
+## Built With
+- Streamlit
+- OpenAI
+- Foursquare Places API
+- Eventbrite API
+- SerpAPI
+- MailerSend
