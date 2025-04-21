@@ -1,9 +1,8 @@
 
 import firebase_admin
 from firebase_admin import credentials, db
-import uuid
 
-# Initialize Firebase App (only once)
+# Initialize Firebase App
 def init_firebase(api_key, project_id, db_url):
     if not firebase_admin._apps:
         cred = credentials.Certificate({
@@ -20,26 +19,36 @@ def init_firebase(api_key, project_id, db_url):
         })
         firebase_admin.initialize_app(cred, {"databaseURL": db_url})
 
-# Store user entry under a session ID
+# Save user data to session
 def save_user_to_session(session_id, user_data):
-    ref = db.reference("/test_write")
-    ref.set({"status": "Success", "name": user_data.get("name", "no name")})
+    try:
+        ref = db.reference(f"sessions/{session_id}/users")
+        ref.push(user_data)
+    except Exception as e:
+        print("Firebase write error (users):", e)
 
-# Save trip info
+# Save trip info to session
 def save_trip_to_session(session_id, trip_data):
-    ref = db.reference(f"sessions/{session_id}/trip")
-    ref.set(trip_data)
+    try:
+        ref = db.reference(f"sessions/{session_id}/trip")
+        ref.set(trip_data)
+    except Exception as e:
+        print("Firebase write error (trip):", e)
 
-# Retrieve all users in a session
+# Retrieve all user entries in session
 def get_session_users(session_id):
     try:
         ref = db.reference(f"sessions/{session_id}/users")
         return ref.get() or {}
     except Exception as e:
-        print("Firebase read error:", e)
+        print("Firebase user read error:", e)
         return {}
 
 # Retrieve trip data
 def get_trip_data(session_id):
-    ref = db.reference(f"sessions/{session_id}/trip")
-    return ref.get() or {}
+    try:
+        ref = db.reference(f"sessions/{session_id}/trip")
+        return ref.get() or {}
+    except Exception as e:
+        print("Firebase trip read error:", e)
+        return {}
