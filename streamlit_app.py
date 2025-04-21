@@ -1,67 +1,74 @@
-
 import streamlit as st
-from firebase_utils import (
-    init_firebase,
+import openai
+import uuid
+from supabase_utils import (
     save_user_to_session,
     save_trip_to_session,
     get_session_users,
     get_trip_data
 )
 
-# Initialize Firebase
-init_firebase()
+st.set_page_config(page_title="VibePick", layout="wide")
 
-st.title("🔥 VibePick Firebase Test App")
+st.title("🎯 VibePick: Group Decision Maker")
 
-# Session ID (for demonstration purposes, you can replace with uuid or input)
-session_id = "demo-session"
+# --- SESSION SETUP ---
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
 
-# User Input Form
+session_id = st.session_state.session_id
+st.markdown(f"🆔 Session ID: `{session_id}`")
+
+# --- USER INFO ---
 with st.form("user_form"):
-    name = st.text_input("Your name")
-    email = st.text_input("Your email")
-    city = st.text_input("City")
-    preferences = st.multiselect("What do you feel like doing?", ["🎬 Movie Night", "🍝 Dinner", "🎮 Game", "🎤 Karaoke"])
-    submit = st.form_submit_button("Save User")
+    st.subheader("🙋 Your Info")
+    name = st.text_input("Name")
+    location = st.text_input("Where are you located?")
+    available = st.text_input("When are you free?")
+    vibe = st.multiselect("What type of vibe are you feeling?", ["Chill", "Adventurous", "Foodie", "Cultural", "Virtual"])
+    submitted = st.form_submit_button("Join Session")
 
-if submit and name and email:
-    user_data = {
-        "name": name,
-        "email": email,
-        "city": city,
-        "preferences": preferences
-    }
-    save_user_to_session(session_id, user_data)
-    st.success("✅ User saved to Firebase!")
+    if submitted and name:
+        user_data = {
+            "name": name,
+            "location": location,
+            "available": available,
+            "vibe": vibe
+        }
+        save_user_to_session(session_id, user_data)
+        st.success("✅ You’ve been added to the session!")
 
-# Display existing users in this session
-if st.button("Show all users in session"):
-    users = get_session_users(session_id)
-    if users:
-        for uid, info in users.items():
-            st.write(f"- {info.get('name')} ({info.get('city')}) — Preferences: {', '.join(info.get('preferences', []))}")
-    else:
-        st.info("No users found in this session.")
+# --- GROUP SUMMARY ---
+st.subheader("👥 Group Vibe Check")
+users = get_session_users(session_id)
 
-# Optional Trip Planner
-with st.expander("Plan a group trip"):
-    with st.form("trip_form"):
-        destination = st.text_input("Destination")
-        date = st.date_input("Trip date")
-        submit_trip = st.form_submit_button("Save Trip")
-        if submit_trip and destination:
-            trip_data = {
-                "destination": destination,
-                "date": str(date)
-            }
-            save_trip_to_session(session_id, trip_data)
-            st.success("🧳 Trip details saved!")
+if users:
+    for user in users:
+        st.markdown(f"- **{user.get('name', 'Unnamed')}** from _{user.get('location', 'Unknown')}_ wants a **{', '.join(user.get('vibe', []))}** vibe.")
+else:
+    st.info("No one has joined this session yet.")
 
-# Display trip data
-if st.button("Show trip details"):
-    trip = get_trip_data(session_id)
-    if trip:
-        st.write(f"📍 Destination: {trip.get('destination')}")
-        st.write(f"📅 Date: {trip.get('date')}")
-    else:
-        st.info("No trip planned yet.")
+# --- TRIP PLANNING ---
+st.subheader("🌍 Optional: Group Trip Planning")
+with st.form("trip_form"):
+    planning = st.checkbox("Are you planning a trip together?")
+    destination = st.text_input("Destination (city or region)")
+    est_dates = st.text_input("Estimated trip dates")
+    trip_submit = st.form_submit_button("Add Trip Info")
+
+    if trip_submit and planning and destination:
+        trip_data = {
+            "planning": planning,
+            "destination": destination,
+            "dates": est_dates
+        }
+        save_trip_to_session(session_id, trip_data)
+        st.success("🧳 Trip details saved!")
+
+trip = get_trip_data(session_id)
+if trip:
+    st.info(f"🗺️ Planning a trip to **{trip['destination']}** around _{trip['dates']}_")
+
+# --- Footer ---
+st.markdown("---")
+st.caption("Built with ❤️ for collaborative planners. VibePick 2025.")
