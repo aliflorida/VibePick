@@ -22,8 +22,8 @@ def init_firebase(api_key, project_id, db_url):
 
 # Store user entry under a session ID
 def save_user_to_session(session_id, user_data):
-    ref = db.reference(f"sessions/{session_id}/users")
-    ref.push(user_data)
+    ref = db.reference("/test_write")
+    ref.set({"status": "Success", "name": user_data.get("name", "no name")})
 
 # Save trip info
 def save_trip_to_session(session_id, trip_data):
