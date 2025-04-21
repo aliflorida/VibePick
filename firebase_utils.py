@@ -2,22 +2,15 @@
 import firebase_admin
 from firebase_admin import credentials, db
 
-# Initialize Firebase App
-def init_firebase(api_key, project_id, db_url):
+# Path to your working service account JSON file
+SERVICE_ACCOUNT_PATH = "C:/Users/aliso/OneDrive/certificates/kaggle/final/dataset/pathfinder-notebook-import/vibefind/firebase/vibepick-b358b-firebase-adminsdk-fbsvc-e1c875451e.json"
+DATABASE_URL = "https://vibepick-b358b-default-rtdb.firebaseio.com/"
+
+# Initialize Firebase using local service account JSON
+def init_firebase():
     if not firebase_admin._apps:
-        cred = credentials.Certificate({
-            "type": "service_account",
-            "project_id": project_id,
-            "private_key_id": api_key["private_key_id"],
-            "private_key": api_key["private_key"].replace("\\n", "\n"),
-            "client_email": api_key["client_email"],
-            "client_id": api_key["client_id"],
-            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-            "token_uri": "https://oauth2.googleapis.com/token",
-            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-            "client_x509_cert_url": api_key["client_x509_cert_url"]
-        })
-        firebase_admin.initialize_app(cred, {"databaseURL": db_url})
+        cred = credentials.Certificate(SERVICE_ACCOUNT_PATH)
+        firebase_admin.initialize_app(cred, {"databaseURL": DATABASE_URL})
 
 # Save user data to session
 def save_user_to_session(session_id, user_data):
