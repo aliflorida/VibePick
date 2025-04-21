@@ -1,6 +1,14 @@
 
 import streamlit as st
 from firebase_admin import db
+from firebase_utils import init_firebase
+
+# Initialize Firebase correctly before using db
+init_firebase(
+    st.secrets["FIREBASE_CREDENTIALS"],
+    st.secrets["FIREBASE_PROJECT_ID"],
+    st.secrets["FIREBASE_DB_URL"]
+)
 
 st.title("🔥 Firebase Write Test")
 
