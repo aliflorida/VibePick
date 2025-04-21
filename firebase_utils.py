@@ -5,6 +5,10 @@ import streamlit as st
 def init_firebase():
     if not firebase_admin._apps:
         firebase_creds = dict(st.secrets["FIREBASE_CREDENTIALS"])
+import pprint
+pp = pprint.PrettyPrinter(depth=2)
+print("🔍 Firebase credentials loaded:")
+pp.pprint(firebase_creds)
         cred = credentials.Certificate(firebase_creds)
         firebase_admin.initialize_app(cred, {
             "databaseURL": st.secrets["FIREBASE_DB_URL"]
