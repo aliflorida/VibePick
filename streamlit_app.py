@@ -1,6 +1,5 @@
-
 import streamlit as st
-import openai
+from openai import OpenAI
 import uuid
 from datetime import date
 from place_search_utils import search_foursquare_places
@@ -19,7 +18,7 @@ FOURSQUARE_API_KEY = st.secrets["FOURSQUARE_API_KEY"]
 EVENTBRITE_TOKEN = st.secrets["EVENTBRITE_TOKEN"]
 SERPAPI_KEY = st.secrets["SERPAPI_KEY"]
 MAILERSEND_API_KEY = st.secrets["MAILERSEND_API_KEY"]
-openai.api_key = OPENAI_API_KEY
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 # Session ID
 if "session_id" not in st.session_state:
@@ -69,11 +68,11 @@ if st.button("Regenerate Suggestions"):
     Keep the tone casual and group-friendly.
     """
 
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model="gpt-4",
         messages=[{"role": "user", "content": prompt}]
     )
-    ai_result = response["choices"][0]["message"]["content"]
+    ai_result = response.choices[0].message.content
     st.success("Here’s what the AI suggests:")
     st.markdown(ai_result)
 
