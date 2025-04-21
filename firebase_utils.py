@@ -9,7 +9,7 @@ import pprint
 pp = pprint.PrettyPrinter(depth=2)
 print("🔍 Firebase credentials loaded:")
 pp.pprint(firebase_creds)
-        cred = credentials.Certificate(firebase_creds)
+        cred = credentials.Certificate("firebase_service_key_real_newlines.json")
         firebase_admin.initialize_app(cred, {
             "databaseURL": st.secrets["FIREBASE_DB_URL"]
         })
