@@ -25,7 +25,7 @@ def save_user_to_session(session_id, user_data):
 
 def save_trip_to_session(session_id, trip_data):
     payload = {
-        "session_id": session_id,
+        "id": session_id,
         "planning": trip_data.get("planning"),
         "destination": trip_data.get("destination"),
         "dates": trip_data.get("dates")
@@ -54,7 +54,7 @@ def get_session_users(session_id):
         return []
 
 def get_trip_data(session_id):
-    url = f"{SUPABASE_URL}/rest/v1/trip_plans?session_id=eq.{session_id}"
+    url = f"{SUPABASE_URL}/rest/v1/trip_plans?id=eq.{session_id}"
     try:
         response = requests.get(url, headers=SUPABASE_HEADERS)
         response.raise_for_status()
