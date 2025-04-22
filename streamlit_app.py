@@ -1,89 +1,129 @@
+
+# streamlit_app.py
 import streamlit as st
+from supabase_utils import (
+    create_session_id,
+    save_user_to_session,
+    get_session_users,
+    save_trip_to_session,
+    get_trip_data,
+    send_group_email
+)
+from virtual_event_utils import search_virtual_events
 import uuid
-from supabase_utils import save_user_to_session, save_trip_to_session, get_session_users, get_trip_data
-import requests
 import os
 
-st.set_page_config(page_title="VibePick", layout="wide")
+st.set_page_config(page_title="VibePick", layout="centered")
 
-SUPABASE_URL = st.secrets.get("SUPABASE_URL", "")
-SUPABASE_API_KEY = st.secrets.get("SUPABASE_API_KEY", "")
+st.title("🎉 VibePick – Find Your Group Vibe")
 
-st.title("🎯 VibePick – Plan Something Fun Together or Solo")
+# --- Session Setup ---
+st.markdown("### 👥 Join or Start a Group")
 
-mode = st.radio("Who's planning?", ["👤 Just Me", "🧑‍🤝‍🧑 Group Planner"], horizontal=True)
-session_id = str(uuid.uuid4())
-
-with st.form("vibe_form"):
-    name = st.text_input("Your name")
-    location = st.text_input("Where are you located?")
-    available = st.selectbox("When are you available?", ["Now", "Later today", "This weekend", "Next week"])
-
-    vibe = st.multiselect("What’s your vibe?", ["Chill", "Adventurous", "Creative", "Social", "Relaxing", "Productive"])
-    activities = st.multiselect("What types of activities are you interested in?",
-        ["Breakfast", "Lunch", "Brunch", "Dinner", "Coffee", "Shopping", "Outdoor", "Entertainment", "Wellness", "Co-working"])
-    format_pref = st.multiselect("Preferred event format", ["In-person", "Virtual", "Hybrid"])
-
-    if mode == "🧑‍🤝‍🧑 Group Planner":
-        planning = st.checkbox("This is a future plan (we're not together yet)", value=True)
-
-    destination = st.text_input("If you're thinking of a place or vibe, type it here (optional)")
-    dates = st.date_input("Date(s) you're considering", [])
-
-    email_results = st.checkbox("Email me the results")
-    email_address = st.text_input("Enter your email", "") if email_results else ""
-
-    submitted = st.form_submit_button("🔍 Suggest Ideas")
+with st.form("session_join_form"):
+    mode = st.radio("Are you planning solo or with a group?", ["Group", "Solo"])
+    session_id_input = st.text_input("Enter your Group Session ID (or leave blank to create one):")
+    submitted = st.form_submit_button("Continue")
 
 if submitted:
-    user_data = {
-        "name": name,
-        "location": location,
-        "available": available,
-        "vibe": vibe
-    }
+    if session_id_input.strip():
+        session_id = session_id_input.strip()
+        st.session_state["session_id"] = session_id
+    else:
+        session_id = create_session_id()
+        st.session_state["session_id"] = session_id
+        st.success(f"New group created! Share this Group Session ID: {session_id}")
 
-    if mode == "🧑‍🤝‍🧑 Group Planner":
+    st.rerun()
+
+# Stop here if not initialized
+if "session_id" not in st.session_state:
+    st.stop()
+
+session_id = st.session_state["session_id"]
+
+# --- Participant Details ---
+if mode == "Group":
+    st.markdown("### 🧑 Add Your Info")
+    with st.form("user_info_form"):
+        name = st.text_input("Your Name")
+        location = st.text_input("Your Location")
+        availability = st.selectbox("When are you available?", ["This weekend", "Next week", "Later today", "Flexible"])
+        vibe = st.multiselect("What vibe are you feeling?", ["Relaxing", "Adventurous", "Creative", "Social"])
+        submit_user = st.form_submit_button("Submit to Group")
+
+    if submit_user and name and location:
+        user_data = {
+            "id": str(uuid.uuid4()),
+            "session_id": session_id,
+            "name": name,
+            "location": location,
+            "available": availability,
+            "vibe": ",".join(vibe),
+        }
         try:
             save_user_to_session(session_id, user_data)
-            save_trip_to_session(session_id, {
-                "planning": planning,
-                "destination": destination,
-                "dates": str(dates)
-            })
             st.success("✅ Group details saved! Gathering recommendations...")
-            st.info(f"📋 Share this Group Session ID: `{session_id}`")
-
-            users = get_session_users(session_id)
-            st.subheader("🧑‍🤝‍🧑 Group Members")
-            for u in users:
-                st.markdown(f"- {u['name']} ({u['location']}) – {', '.join(u['vibe'])}")
-
         except Exception as e:
-            st.error("❌ Failed to save group data.")
-            st.text(f"Error details: {e}")
+            st.error(f"❌ Failed to save group data.")
 
-    else:
-        st.success("✅ Solo plan started! Gathering ideas just for you...")
+        st.markdown(f"📋 Share this Group Session ID: `{session_id}`")
 
-    st.subheader("🎯 Suggested Ideas (Mockup)")
-    st.markdown("Here would be live API suggestions based on your filters...")
-
-    if email_results and email_address:
         try:
-            requests.post(
-                "https://api.mailersend.com/v1/email",
-                headers={
-                    "Authorization": f"Bearer {st.secrets['MAILERSEND_API_KEY']}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "from": {"email": "hello@vibepick.app", "name": "VibePick"},
-                    "to": [{"email": email_address}],
-                    "subject": "Your VibePick Suggestions",
-                    "text": "Here's what we think you'll enjoy! (actual results to be inserted here)"
-                }
-            )
-            st.success("📩 Results emailed!")
-        except Exception as e:
-            st.error(f"📧 Email failed: {e}")
+            users = get_session_users(session_id)
+            st.markdown("### 🧑‍🤝‍🧑 Group Members")
+            for u in users:
+                st.markdown(f"- **{u['name']}** ({u['location']}) – {u['vibe']}")
+        except:
+            st.warning("No users found in session.")
+
+# --- Trip Planning ---
+st.subheader("🌍 Optional: Group Trip Planning")
+with st.form("trip_form"):
+    planning = st.checkbox("Are you planning a trip together?")
+    destination = st.text_input("Destination (city or region)")
+    est_dates = st.text_input("Estimated trip dates")
+    submit_trip = st.form_submit_button("Save Trip Info")
+
+if submit_trip and planning:
+    try:
+        save_trip_to_session(session_id, {
+            "id": session_id,
+            "session_id": session_id,
+            "destination": destination,
+            "dates": est_dates
+        })
+        st.success("🗺 Trip saved!")
+    except Exception as e:
+        st.error(f"❌ Trip save failed.")
+
+# --- Activity Filters ---
+st.subheader("🧭 Choose Activity Preferences")
+
+with st.form("activity_filters"):
+    event_type = st.selectbox("Event Type", ["In-person", "Virtual", "Hybrid"])
+    activity_keywords = st.multiselect("What kind of activities?", ["Live music", "Workshops", "Food", "Fitness", "Tech", "VR", "Games"])
+    email_list = st.text_input("Optional: Enter group emails to share results (comma-separated)")
+    submit_filters = st.form_submit_button("Get Suggestions")
+
+if submit_filters:
+    st.markdown("🎯 Suggested Ideas")
+
+    if event_type in ["Virtual", "Hybrid"]:
+        try:
+            events = search_virtual_events(activity_keywords)
+            if not events:
+                st.warning("No virtual events found.")
+            for e in events:
+                st.markdown(f"- [{e['name']}]({e['url']}) on {e['date']}")
+        except:
+            st.error("⚠️ Could not fetch virtual events.")
+
+    if email_list:
+        try:
+            users = get_session_users(session_id)
+            email_arr = [e.strip() for e in email_list.split(",")]
+            send_group_email(email_arr, users, session_id)
+            st.success("📧 Email sent to your group!")
+        except:
+            st.error("⚠️ Failed to send group email.")
