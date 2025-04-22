@@ -1,4 +1,3 @@
-
 # streamlit_app.py (Enhanced with UI polish, homepage, and email prompt)
 import streamlit as st
 from supabase_utils import (
@@ -44,13 +43,16 @@ if submitted:
     else:
         session_id = create_session_id()
         st.session_state["session_id"] = session_id
-        st.success(f"New group created! Share this Group Session ID: {session_id}")
+        if mode == "Group":
+            st.success(f"New group created! Share this Group Session ID: {session_id}")
+    st.session_state["mode"] = mode
     st.rerun()
 
 if "session_id" not in st.session_state:
     st.stop()
 
 session_id = st.session_state["session_id"]
+mode = st.session_state["mode"]
 
 # --- Participant Info & Preferences ---
 st.markdown("### 🧑 Add Your Info")
@@ -58,7 +60,7 @@ with st.form("user_info_form"):
     name = st.text_input("Your Name")
     email = st.text_input("Your Email (used only to share results)")
     location = st.text_input("Your Location (City or Region)")
-    availability = st.selectbox("When are you available?", ["This weekend", "Next week", "Later today", "Flexible"])
+    availability = st.selectbox("When are you available?", ["This weekend", "Next week", "Later today", "Flexible", "I'll enter dates below"])
     dates = st.date_input("Preferred Date(s)", [])
     vibe = st.multiselect("What vibe are you feeling?", ["Relaxing", "Adventurous", "Creative", "Social"])
     event_type = st.selectbox("Preferred Event Type", ["In-person", "Virtual", "Hybrid"])
@@ -81,15 +83,16 @@ if submit_user and name and location:
     except Exception as e:
         st.error(f"❌ Failed to save data. {e}")
 
-    st.markdown(f"📋 Share this Group Session ID: `{session_id}`")
+    if mode == "Group":
+        st.markdown(f"📋 Share this Group Session ID: `{session_id}`")
 
-    try:
-        users = get_session_users(session_id)
-        st.markdown("### 🧑‍🤝‍🧑 Group Members")
-        for u in users:
-            st.markdown(f"- **{u['name']}** ({u['location']}) – {u['vibe']}")
-    except:
-        st.warning("No users found yet.")
+        try:
+            users = get_session_users(session_id)
+            st.markdown("### 🧑‍🤝‍🧑 Group Members")
+            for u in users:
+                st.markdown(f"- **{u['name']}** ({u['location']}) – {u['vibe']}")
+        except:
+            st.warning("No users found yet.")
 
     st.markdown("### 🎯 Suggested Ideas")
     if not activity_keywords:
@@ -109,7 +112,7 @@ if submit_user and name and location:
             email_arr = [e.strip() for e in email_list.split(",") if e.strip()]
             if email:
                 email_arr.append(email.strip())
-            send_group_email(email_arr, users, session_id)
+            send_group_email(email_arr, get_session_users(session_id), session_id)
             st.success("📧 Emails sent!")
         except Exception as e:
             st.error(f"Failed to send emails. {e}")
