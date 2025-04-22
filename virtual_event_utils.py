@@ -1,93 +1,78 @@
 
-# virtual_event_utils.py
-import requests
 import os
+import uuid
+import requests
+from dotenv import load_dotenv
 
-EVENTBRITE_TOKEN = os.getenv("EVENTBRITE_TOKEN")
-SERPAPI_KEY = os.getenv("SERPAPI_KEY")
-FOURSQUARE_API_KEY = os.getenv("FOURSQUARE_API_KEY")
+load_dotenv()
 
-def search_eventbrite_events(keywords):
-    headers = {"Authorization": f"Bearer {EVENTBRITE_TOKEN}"}
-    query = ",".join(keywords)
-    url = f"https://www.eventbriteapi.com/v3/events/search/?q={query}&online_event=true"
-    try:
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        data = response.json()
-        return [{
-            "name": e["name"]["text"],
-            "url": e["url"],
-            "date": e["start"]["local"].split("T")[0]
-        } for e in data.get("events", [])]
-    except:
-        return []
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 
-def search_foursquare_places(keywords, location="New York"):
-    try:
-        url = "https://api.foursquare.com/v3/places/search"
-        headers = {
-            "Authorization": FOURSQUARE_API_KEY,
-            "Accept": "application/json"
-        }
-        params = {
-            "query": ",".join(keywords),
-            "near": location,
-            "limit": 5
-        }
-        response = requests.get(url, headers=headers, params=params)
-        response.raise_for_status()
-        data = response.json()
-        return [{
-            "name": place["name"],
-            "url": f"https://foursquare.com/v/{place['fsq_id']}",
-            "date": "Local"
-        } for place in data.get("results", [])]
-    except:
-        return []
+HEADERS = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": f"Bearer {SUPABASE_KEY}",
+    "Content-Type": "application/json",
+}
 
-def search_meta_vr_events():
-    try:
-        response = requests.get("https://www.meta.com/events/")
-        return [{"name": "Meta VR Event", "url": "https://www.meta.com/events/", "date": "Upcoming"}]
-    except:
-        return []
+def create_session_id():
+    return str(uuid.uuid4())
 
-def search_apple_vision_events():
-    try:
-        response = requests.get("https://www.apple.com/apple-vision-pro/")
-        return [{"name": "Apple Vision Pro Showcase", "url": "https://www.apple.com/apple-vision-pro/", "date": "Ongoing"}]
-    except:
-        return []
+def save_user_to_session(session_id, user_data):
+    response = requests.post(
+        f"{SUPABASE_URL}/rest/v1/session_users",
+        headers=HEADERS,
+        json=user_data,
+    )
+    response.raise_for_status()
 
-def search_serpapi_events(keywords):
-    url = "https://serpapi.com/search"
-    query = ",".join(keywords)
-    params = {
-        "q": f"{query} virtual events site:meetup.com OR site:eventbrite.com OR site:meta.com OR site:apple.com",
-        "api_key": SERPAPI_KEY,
-        "engine": "google"
+def get_session_users(session_id):
+    response = requests.get(
+        f"{SUPABASE_URL}/rest/v1/session_users?session_id=eq.{session_id}",
+        headers=HEADERS,
+    )
+    response.raise_for_status()
+    return response.json()
+
+def save_trip_to_session(session_id, trip_data):
+    trip_payload = {
+        "id": str(uuid.uuid4()),
+        "session_id": session_id,
+        "destination": trip_data.get("destination", ""),
+        "dates": trip_data.get("dates", "")
     }
+    response = requests.post(
+        f"{SUPABASE_URL}/rest/v1/trip_plans",
+        headers=HEADERS,
+        json=trip_payload,
+    )
+    response.raise_for_status()
+
+def get_trip_data(session_id):
+    response = requests.get(
+        f"{SUPABASE_URL}/rest/v1/trip_plans?session_id=eq.{session_id}",
+        headers=HEADERS,
+    )
+    response.raise_for_status()
+    return response.json()
+
+def send_group_email(recipients, users, session_id):
+    import smtplib
+    from email.mime.text import MIMEText
+
+    body = f"Group Session ID: {session_id}\n\nMembers:\n"
+    for u in users:
+        body += f"- {u['name']} from {u['location']} — {u['vibe']}\n"
+
+    msg = MIMEText(body)
+    msg['Subject'] = 'Your VibePick Group Info'
+    msg['From'] = 'noreply@vibepick.app'
+    msg['To'] = ', '.join(recipients)
+
     try:
-        response = requests.get(url, params=params)
-        response.raise_for_status()
-        results = response.json()
-        return [{
-            "name": r["title"],
-            "url": r["link"],
-            "date": "N/A"
-        } for r in results.get("organic_results", [])]
-    except:
-        return []
-
-def search_virtual_events(keywords, location="New York"):
-    if not keywords:
-        return []
-
-    all_events = []
-    all_events.extend(search_eventbrite_events(keywords))
-    all_events.extend(search_foursquare_places(keywords, location))
-    all_events.extend(search_meta_vr_events())
-    all_events.extend(search_apple_vision_events())
-    all_events.extend(search_serpapi_events(keywords))
-    return all_events
+        with smtplib.SMTP('smtp.mailersend.net', 587) as server:
+            server.starttls()
+            server.login(os.getenv("MAILERSEND_EMAIL"), os.getenv("MAILERSEND_API_KEY"))
+            server.sendmail(msg['From'], recipients, msg.as_string())
+    except Exception as e:
+        raise RuntimeError(f"Email sending failed: {e}")
