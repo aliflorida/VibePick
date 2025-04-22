@@ -1,4 +1,4 @@
-# streamlit_app.py (Enhanced with multi-select event type)
+# streamlit_app.py (Polished UI with logo, vibrant layout, and flexible inputs)
 import streamlit as st
 from supabase_utils import (
     create_session_id,
@@ -11,10 +11,34 @@ from supabase_utils import (
 from virtual_event_utils import search_virtual_events
 import uuid
 import os
+from datetime import date
 
 st.set_page_config(page_title="VibePick", layout="centered")
 
-# --- Welcome Screen ---
+# --- Custom Styling ---
+st.markdown("""
+<style>
+    .main > div {
+        background-color: #f9f9fb;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 0 15px rgba(0,0,0,0.05);
+    }
+    h1, h2, h3 {
+        color: #5C6BC0;
+    }
+    .stButton>button {
+        background-color: #5C6BC0;
+        color: white;
+        font-weight: 600;
+        border-radius: 8px;
+        padding: 0.5rem 1.2rem;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# --- Logo + Welcome Screen ---
+st.image("https://i.imgur.com/JI8oROQ.png", width=200)  # Placeholder logo image URL
 st.title("🎉 Welcome to VibePick")
 st.markdown("Where groups (or solo adventurers) match their vibe and discover things to do — online or IRL.")
 
@@ -61,7 +85,7 @@ with st.form("user_info_form"):
     email = st.text_input("Your Email (used only to share results)")
     location = st.text_input("Your Location (City or Region)")
     availability = st.selectbox("When are you available?", ["This weekend", "Next week", "Later today", "Flexible", "I'll enter dates below"])
-    dates = st.date_input("Preferred Date(s)", [])
+    dates = st.date_input("Preferred Date(s)", value=(date.today(), date.today()))
     vibe = st.multiselect("What vibe are you feeling?", ["Relaxing", "Adventurous", "Creative", "Social"])
     event_type = st.multiselect("Preferred Event Types", ["In-person", "Virtual", "Hybrid"])
     activity_keywords = st.multiselect("What kind of activities are you into?", ["Live music", "Workshops", "Food", "Fitness", "Tech", "VR", "Games"])
@@ -122,7 +146,7 @@ st.subheader("🌍 Group Trip Planner")
 with st.form("trip_form"):
     planning = st.checkbox("Planning a trip?")
     destination = st.text_input("Where to?")
-    est_dates = st.date_input("Estimated Trip Dates")
+    est_dates = st.date_input("Estimated Trip Dates", value=(date.today(), date.today()))
     submit_trip = st.form_submit_button("Save Trip Plan")
 
 if submit_trip and planning:
