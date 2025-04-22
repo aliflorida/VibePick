@@ -1,4 +1,4 @@
-# streamlit_app.py (Enhanced with UI polish, homepage, and email prompt)
+# streamlit_app.py (Enhanced with multi-select event type)
 import streamlit as st
 from supabase_utils import (
     create_session_id,
@@ -63,7 +63,7 @@ with st.form("user_info_form"):
     availability = st.selectbox("When are you available?", ["This weekend", "Next week", "Later today", "Flexible", "I'll enter dates below"])
     dates = st.date_input("Preferred Date(s)", [])
     vibe = st.multiselect("What vibe are you feeling?", ["Relaxing", "Adventurous", "Creative", "Social"])
-    event_type = st.selectbox("Preferred Event Type", ["In-person", "Virtual", "Hybrid"])
+    event_type = st.multiselect("Preferred Event Types", ["In-person", "Virtual", "Hybrid"])
     activity_keywords = st.multiselect("What kind of activities are you into?", ["Live music", "Workshops", "Food", "Fitness", "Tech", "VR", "Games"])
     email_list = st.text_input("Group Emails (comma-separated, optional)")
     submit_user = st.form_submit_button("Submit & Generate Ideas")
