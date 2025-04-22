@@ -1,74 +1,90 @@
 import streamlit as st
-import openai
 import uuid
-from supabase_utils import (
-    save_user_to_session,
-    save_trip_to_session,
-    get_session_users,
-    get_trip_data
-)
+from supabase_utils import save_user_to_session, save_trip_to_session, get_session_users, get_trip_data
+import requests
+import os
 
 st.set_page_config(page_title="VibePick", layout="wide")
 
-st.title("🎯 VibePick: Group Decision Maker")
+# Supabase API keys from environment or secrets
+SUPABASE_URL = st.secrets.get("SUPABASE_URL", "")
+SUPABASE_API_KEY = st.secrets.get("SUPABASE_API_KEY", "")
 
-# --- SESSION SETUP ---
-if "session_id" not in st.session_state:
-    st.session_state.session_id = str(uuid.uuid4())
+st.title("🎯 VibePick – Plan Something Fun Together or Solo")
 
-session_id = st.session_state.session_id
-st.markdown(f"🆔 Session ID: `{session_id}`")
+# Mode Selection
+mode = st.radio("Who's planning?", ["👤 Just Me", "🧑‍🤝‍🧑 Group Planner"], horizontal=True)
 
-# --- USER INFO ---
-with st.form("user_form"):
-    st.subheader("🙋 Your Info")
-    name = st.text_input("Name")
+# Generate a unique session ID for this user/session
+session_id = str(uuid.uuid4())
+
+# Basic Info
+with st.form("vibe_form"):
+    name = st.text_input("Your name")
     location = st.text_input("Where are you located?")
-    available = st.text_input("When are you free?")
-    vibe = st.multiselect("What type of vibe are you feeling?", ["Chill", "Adventurous", "Foodie", "Cultural", "Virtual"])
-    submitted = st.form_submit_button("Join Session")
+    available = st.selectbox("When are you available?", ["Now", "Later today", "This weekend", "Next week"])
+    
+    vibe = st.multiselect("What’s your vibe?", ["Chill", "Adventurous", "Creative", "Social", "Relaxing", "Productive"])
+    activities = st.multiselect("What types of activities are you interested in?", 
+        ["Breakfast", "Lunch", "Brunch", "Dinner", "Coffee", "Shopping", "Outdoor", "Entertainment", "Wellness", "Co-working"])
+    format_pref = st.multiselect("Preferred event format", ["In-person", "Virtual", "Hybrid"])
 
-    if submitted and name:
-        user_data = {
-            "name": name,
-            "location": location,
-            "available": available,
-            "vibe": vibe
-        }
+    if mode == "🧑‍🤝‍🧑 Group Planner":
+        planning = st.checkbox("This is a future plan (we're not together yet)", value=True)
+
+    destination = st.text_input("If you're thinking of a place or vibe, type it here (optional)")
+    dates = st.date_input("Date(s) you're considering", [])
+
+    email_results = st.checkbox("Email me the results")
+    email_address = st.text_input("Enter your email", "") if email_results else ""
+
+    submitted = st.form_submit_button("🔍 Suggest Ideas")
+
+# Handle submission
+if submitted:
+    user_data = {
+        "name": name,
+        "location": location,
+        "available": available,
+        "vibe": vibe
+    }
+
+    if mode == "🧑‍🤝‍🧑 Group Planner":
         save_user_to_session(session_id, user_data)
-        st.success("✅ You’ve been added to the session!")
-
-# --- GROUP SUMMARY ---
-st.subheader("👥 Group Vibe Check")
-users = get_session_users(session_id)
-
-if users:
-    for user in users:
-        st.markdown(f"- **{user.get('name', 'Unnamed')}** from _{user.get('location', 'Unknown')}_ wants a **{', '.join(user.get('vibe', []))}** vibe.")
-else:
-    st.info("No one has joined this session yet.")
-
-# --- TRIP PLANNING ---
-st.subheader("🌍 Optional: Group Trip Planning")
-with st.form("trip_form"):
-    planning = st.checkbox("Are you planning a trip together?")
-    destination = st.text_input("Destination (city or region)")
-    est_dates = st.text_input("Estimated trip dates")
-    trip_submit = st.form_submit_button("Add Trip Info")
-
-    if trip_submit and planning and destination:
-        trip_data = {
+        save_trip_to_session(session_id, {
             "planning": planning,
             "destination": destination,
-            "dates": est_dates
-        }
-        save_trip_to_session(session_id, trip_data)
-        st.success("🧳 Trip details saved!")
+            "dates": str(dates)
+        })
+        st.success("✅ Group details saved! Gathering recommendations...")
 
-trip = get_trip_data(session_id)
-if trip:
-    st.info(f"🗺️ Planning a trip to **{trip['destination']}** around _{trip['dates']}_")
+        # List group members
+        users = get_session_users(session_id)
+        st.subheader("🧑‍🤝‍🧑 Group Members")
+        for u in users:
+            st.markdown(f"- {u['name']} ({u['location']}) - {', '.join(u['vibe'])}")
 
-# --- Footer ---
-st.markdown("---")
-st.caption("Built with ❤️ for collaborative planners. VibePick 2025.")
+    else:
+        st.success("✅ Solo plan started! Gathering ideas just for you...")
+
+    st.subheader("🎯 Suggested Ideas (Mockup)")
+    st.markdown("Here would be live API suggestions based on your filters...")
+
+    if email_results and email_address:
+        try:
+            requests.post(
+                "https://api.mailersend.com/v1/email",
+                headers={
+                    "Authorization": f"Bearer {st.secrets['MAILERSEND_API_KEY']}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "from": {"email": "hello@vibepick.app", "name": "VibePick"},
+                    "to": [{"email": email_address}],
+                    "subject": "Your VibePick Suggestions",
+                    "text": "Here's what we think you'll enjoy! (actual results to be inserted here)"
+                }
+            )
+            st.success("📩 Results emailed!")
+        except Exception as e:
+            st.error(f"Email failed: {e}")
