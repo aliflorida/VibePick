@@ -122,16 +122,14 @@ st.subheader("🌍 Group Trip Planner")
 with st.form("trip_form"):
     planning = st.checkbox("Planning a trip?")
     destination = st.text_input("Where to?")
-    est_dates = st.text_input("Estimated Dates")
+    est_dates = st.date_input("Estimated Trip Dates")
     submit_trip = st.form_submit_button("Save Trip Plan")
 
 if submit_trip and planning:
     try:
         save_trip_to_session(session_id, {
-            "id": session_id,
-            "session_id": session_id,
             "destination": destination,
-            "dates": est_dates
+            "dates": str(est_dates)
         })
         st.success("🗺 Trip saved!")
     except Exception as e:
